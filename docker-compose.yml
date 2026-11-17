@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    container_name: login-validation-app
+    ports:
+      - "3000:80"
+
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: login-validation-selenium
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4444/wd/hub/status >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  tests:
+    build:
+      context: .
+      dockerfile: tests/Dockerfile
+    environment:
+      BASE_URL: http://app
+      SELENIUM_URL: http://selenium:4444/wd/hub
+    depends_on:
+      app:
+        condition: service_started
+      selenium:
+        condition: service_healthy
+    profiles: ["test"]
